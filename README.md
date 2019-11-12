@@ -1,0 +1,2 @@
+# TestCapConcurrent
+测试Cap在使用mysql的并发处理情况
