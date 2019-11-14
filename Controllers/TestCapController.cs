@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
+using Dapper;
 using DotNetCore.CAP;
+using DotNetCore.CAP.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using MySql.Data.MySqlClient;
 
 namespace TestCap.Controllers
 {
@@ -50,7 +54,7 @@ namespace TestCap.Controllers
         }
 
 
-        private static async void Send()
+        private static void Send()
         {
             while (!stopSend)
             {
@@ -67,9 +71,36 @@ namespace TestCap.Controllers
                     Extra = new { }
                 };
                 _logger.LogInformation($"发送消息:{sendCount}");
-                _capPublisher.PublishAsync(LocalGlobalParam.EventBusMessage, message);
+
+                Task.Run(async () =>
+                {
+                    //using (var connection = new MySqlConnection(AppDbContext.ConnectionString))
+                    //{
+                    //    await connection.ExecuteAsync(PrepareSql(), new CapPublishedMessage()
+                    //    {
+                    //        Id = index,
+                    //        Added = DateTime.Now,
+                    //        Content = "{}",
+                    //        ExpiresAt = DateTime.Now.AddDays(1),
+                    //        Name = "datahub.eventbus.notify",
+                    //        Retries = 0,
+                    //        StatusName = "Succeeded"
+                    //    });
+                    //    return;
+                    //}
+
+                    await _capPublisher.PublishAsync(LocalGlobalParam.EventBusMessage, message);
+                });
+
                 Thread.Sleep(_interval);
             }
+        }
+
+        private static string PrepareSql()
+        {
+            return
+                $"INSERT INTO `cap.published` (`Id`,`Version`,`Name`,`Content`,`Retries`,`Added`,`ExpiresAt`,`StatusName`)" +
+                $"VALUES(@Id,'v1',@Name,@Content,@Retries,@Added,@ExpiresAt,@StatusName);";
         }
         private static int GetNext()
         {
